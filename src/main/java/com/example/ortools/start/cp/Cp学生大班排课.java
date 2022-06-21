@@ -22,7 +22,7 @@ public class Cp学生大班排课 {
          */
 
         Loader.loadNativeLibraries();
-        int dayNum=7,timeNum=4,studentNum=1,subjectNum = 8;
+        int dayNum=7,timeNum=4,studentNum=2,subjectNum = 8;
         // 基础数据
         int[] days = IntStream.range(0, dayNum).toArray();
         int[] times = IntStream.range(0, timeNum).toArray();
@@ -48,8 +48,8 @@ public class Cp学生大班排课 {
                 {1,1,1,1},
                 {1,1,1,1},
                 {1,1,1,1},
-                {0,0,0,0},
-                {0,0,0,0}
+                {1,1,1,1},
+                {1,1,1,1}
         };
         // 学生可排时段,[student][day][time]
         int[][][] studentAvailableTime  = new int[][][]{
@@ -60,6 +60,15 @@ public class Cp学生大班排课 {
                 {1,1,1,1},
                 {1,1,1,1},
                 {0,0,0,0},
+                {0,0,0,0}
+            },
+            {
+                {0,0,0,0},
+                {1,1,1,1},
+                {1,1,1,1},
+                {1,1,1,1},
+                {1,1,1,1},
+                {1,1,1,1},
                 {0,0,0,0}
             }
         };
@@ -107,20 +116,6 @@ public class Cp学生大班排课 {
                 }
             }
         }
-        // 自习课必须上5次
-//        for (Integer stu : students){
-//            for (Integer sub : subjects){
-//                if (sub == 7){
-//                    LinearExprBuilder builder = LinearExpr.newBuilder();
-//                    for (Integer day : days){
-//                        for (Integer time : times){
-//                            builder.addTerm(lessonPoints[stu][sub][day][time],1);
-//                        }
-//                    }
-//                    model.addEquality(builder,5);
-//                }
-//            }
-//        }
 
         // 每天的最后一节课都是自习课
         for (Integer stu : students){
@@ -142,8 +137,8 @@ public class Cp学生大班排课 {
         }
 
         // 学生可排时段
+        LinearExprBuilder builder2 = LinearExpr.newBuilder();
         for (Integer stu : students){
-            LinearExprBuilder builder2 = LinearExpr.newBuilder();
             for (Integer sub : subjects){
                 for (Integer day : days){
                     for (Integer time : times){
@@ -156,8 +151,8 @@ public class Cp学生大班排课 {
                 }
             }
             //model.addEquality(builder2,19);
-            model.maximize(builder2);
         }
+        model.maximize(builder2);
 
         // 求解
         CpSolver solver = new CpSolver();
