@@ -143,6 +143,8 @@ public class Cp学生大班排课v2 {
             }
         }
 
+
+
         // 确定每天的最后一节课都是自习课
         for (Integer stu : students){
             for (Integer sub : subjects){
@@ -158,11 +160,30 @@ public class Cp学生大班排课v2 {
                         }
                     }
                     model.addEquality(builder,frequency.get(sub));
+                    //model.maximize(builder);
                 }
             }
         }
 
-
+        // 体育课尽量是后三节课
+        for (Integer stu : students){
+            for (Integer sub : subjects){
+                LinearExprBuilder builder = LinearExpr.newBuilder();
+                if (sub == 3){
+                    for (Integer day : days){
+                        for (int i=0;i<timeNum;i++){
+                            if (i==0){
+                                builder.addTerm(lessonPoints[stu][sub][day][i],-1);
+                            }else {
+                                builder.addTerm(lessonPoints[stu][sub][day][i],1);
+                            }
+                        }
+                    }
+                    model.addEquality(builder,frequency.get(sub));
+                    //model.maximize(builder);
+                }
+            }
+        }
 
         // 求解
         CpSolver solver = new CpSolver();
