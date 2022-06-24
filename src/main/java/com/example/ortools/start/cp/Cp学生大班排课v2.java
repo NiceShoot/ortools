@@ -145,7 +145,7 @@ public class Cp学生大班排课v2 {
 
 
 
-        // 确定每天的最后一节课都是自习课
+        // 尽量上下午的最后一节课都是自习课
         for (Integer stu : students){
             for (Integer sub : subjects){
                 LinearExprBuilder builder = LinearExpr.newBuilder();
@@ -179,8 +179,8 @@ public class Cp学生大班排课v2 {
                             }
                         }
                     }
-                    model.addEquality(builder,frequency.get(sub));
-                    //model.maximize(builder);
+                    //model.addEquality(builder,frequency.get(sub));
+                    model.maximize(builder);
                 }
             }
         }
