@@ -1,14 +1,14 @@
 package com.example.ortools.start.cp;
 
+import com.google.common.collect.Lists;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import com.google.common.collect.Lists;
 
-public class Cp学生大班排课v2 {
+public class Cp学生大班排课v3 {
 
     public static void main(String[] args) {
 
@@ -23,7 +23,7 @@ public class Cp学生大班排课v2 {
          *      尽量均匀分布
          */
         Loader.loadNativeLibraries();
-        int dayNum=7,timeNum=4,studentNum=1,subjectNum = 5;
+        int dayNum=7,timeNum=4,studentNum=1,subjectNum = 2;
         // 基础数据
         int[] days = IntStream.range(0, dayNum).toArray();
         int[] times = IntStream.range(0, timeNum).toArray();
@@ -31,13 +31,15 @@ public class Cp学生大班排课v2 {
         int[] subjects = IntStream.range(0, subjectNum).toArray();
         // 周课频
         Map<Integer,Integer> frequency = new HashMap<>();
-        frequency.put(0,5);frequency.put(1,3);frequency.put(2,5);frequency.put(3,2);frequency.put(4,5);
+        frequency.put(0,14);frequency.put(1,14);frequency.put(2,5);frequency.put(3,2);frequency.put(4,5);
         // 科目名称
         Map<Integer,String> subNameMap = new HashMap<>();
         subNameMap.put(0,"语文");subNameMap.put(1,"数学");subNameMap.put(2,"英语");subNameMap.put(3,"体育");subNameMap.put(4,"自习");
         // 周次名称
         Map<Integer,String> weekNameMap = new HashMap<>();
         weekNameMap.put(0,"周一");weekNameMap.put(1,"周二");weekNameMap.put(2,"周三");weekNameMap.put(3,"周四");weekNameMap.put(4,"周五");weekNameMap.put(5,"周六");weekNameMap.put(6,"周日");
+        // 学生不可用时间
+        // 老师不可用时间
         // 国家规定周六日不能上课,[day][time]
         int[][] countryAvailableTime  = new int[][]{
                 {1,1,1,1},
@@ -45,9 +47,10 @@ public class Cp学生大班排课v2 {
                 {1,1,1,1},
                 {1,1,1,1},
                 {1,1,1,1},
-                {0,0,0,0},
-                {0,0,0,0}
+                {1,1,1,1},
+                {1,1,1,1}
         };
+
 
         // 组建模型
         CpModel model = new CpModel();
@@ -62,7 +65,6 @@ public class Cp学生大班排课v2 {
                 }
             }
         }
-
         // 学生可排时段
         LinearExprBuilder builder2 = LinearExpr.newBuilder();
         for (Integer stu : students){
@@ -72,37 +74,13 @@ public class Cp学生大班排课v2 {
                         if (countryAvailableTime[day][time]  == 1){
                             builder2.addTerm(lessonPoints[stu][sub][day][time],1);
                         }else {
-                            builder2.addTerm(lessonPoints[stu][sub][day][time],-1);
+                            builder2.addTerm(lessonPoints[stu][sub][day][time],0);
                         }
                     }
                 }
             }
         }
         model.maximize(builder2);
-
-        // 尽量均匀，尽量均匀散列
-        for (Integer stu : students){
-            for (Integer sub : subjects){
-                Integer fre = frequency.get(sub);
-                int jumpNum ;
-                if (fre >1 ){
-                    jumpNum = dayNum / fre;
-                    int[] t = new int[]{0,1,2,3,4};
-                    List<Integer> dayList = Arrays.stream(t).boxed().collect(Collectors.toList());
-                    List<List<Integer>> partition = Lists.partition(dayList, jumpNum);
-                    partition.forEach(dayPage -> {
-                        List<Literal> list = new ArrayList<>();
-                        dayPage.forEach(day -> {
-                            for (Integer time : times){
-                                list.add(lessonPoints[stu][sub][day][time]);
-                            }
-                        });
-                        model.addBoolOr(list);
-                    });
-                }
-            }
-        }
-
 
         // 每个时段只能上一科
         for (Integer stu : students){
@@ -117,15 +95,18 @@ public class Cp学生大班排课v2 {
             }
         }
 
-        // 每个科目每天最多只能上一次
+        // 让均匀散列
         for (Integer stu : students){
             for (Integer sub : subjects){
                 for (Integer day : days){
-                    List<Literal> list = new ArrayList<>();
                     for (Integer time : times){
-                        list.add(lessonPoints[stu][sub][day][time]);
+                        if (time<times.length-1){
+                            List<Literal> list = new ArrayList<>();
+                            list.add(lessonPoints[stu][sub][day][time]);
+                            list.add(lessonPoints[stu][sub][day][time+1]);
+                            model.addBoolOr(list);
+                        }
                     }
-                    model.addAtMostOne(list);
                 }
             }
         }
@@ -139,55 +120,12 @@ public class Cp学生大班排课v2 {
                         builder.add(lessonPoints[stu][sub][day][time]);
                     }
                 }
-                model.addEquality(builder,frequency.get(sub));
-            }
-        }
-
-
-
-        // 尽量上下午的最后一节课都是自习课
-        for (Integer stu : students){
-            for (Integer sub : subjects){
-                LinearExprBuilder builder = LinearExpr.newBuilder();
-                if (sub == 4){
-                    for (Integer day : days){
-                        for (int i=0;i<timeNum;i++){
-                            if (i==3){
-                                builder.addTerm(lessonPoints[stu][sub][day][i],1);
-                            }else {
-                                builder.addTerm(lessonPoints[stu][sub][day][i],-1);
-                            }
-                        }
-                    }
-                    model.addEquality(builder,frequency.get(sub));
-                    //model.maximize(builder);
-                }
-            }
-        }
-
-        // 体育课尽量是后三节课
-        for (Integer stu : students){
-            for (Integer sub : subjects){
-                LinearExprBuilder builder = LinearExpr.newBuilder();
-                if (sub == 3){
-                    for (Integer day : days){
-                        for (int i=0;i<timeNum;i++){
-                            if (i==0){
-                                builder.addTerm(lessonPoints[stu][sub][day][i],-1);
-                            }else {
-                                builder.addTerm(lessonPoints[stu][sub][day][i],1);
-                            }
-                        }
-                    }
-                    //model.addEquality(builder,frequency.get(sub));
-                    model.maximize(builder);
-                }
+                model.addLessOrEqual(builder,frequency.get(sub));
             }
         }
 
         // 求解
         CpSolver solver = new CpSolver();
-        solver.getParameters().setLinearizationLevel(1);
         CpSolverStatus status = solver.solve(model);
         if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
             System.out.printf("Solution:%n");
