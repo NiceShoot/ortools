@@ -143,26 +143,6 @@ public class Cp学生大班排课v2 {
             }
         }
 
-        // 体育课尽量是di三节课
-        for (Integer stu : students){
-            for (Integer sub : subjects){
-                LinearExprBuilder builder = LinearExpr.newBuilder();
-                if (sub == 3){
-                    for (Integer day : days){
-                        for (int i=0;i<timeNum;i++){
-                            if (i==0 || i==1  || i==3 ){
-                                builder.addTerm(lessonPoints[stu][sub][day][i],-1);
-                            }else {
-                                builder.addTerm(lessonPoints[stu][sub][day][i],1);
-                            }
-                        }
-                    }
-                    model.addEquality(builder,frequency.get(sub));
-                    //model.maximize(builder);
-                }
-            }
-        }
-
         // 尽量上下午的最后一节课都是自习课
         for (Integer stu : students){
             for (Integer sub : subjects){
@@ -177,11 +157,35 @@ public class Cp学生大班排课v2 {
                             }
                         }
                     }
-                    //model.addEquality(builder,frequency.get(sub));
-                    model.maximize(builder);
+                    // model.addEquality(builder,frequency.get(sub));
+                    //model.maximize(builder);
+                    maximize(model, builder);
                 }
             }
         }
+
+        // 体育课尽量是di三节课
+        for (Integer stu : students){
+            for (Integer sub : subjects){
+                LinearExprBuilder builder = LinearExpr.newBuilder();
+                if (sub == 3){
+                    for (Integer day : days){
+                        for (int i=0;i<timeNum;i++){
+                            if (i==0 || i==1  || i==3 ){
+                                builder.addTerm(lessonPoints[stu][sub][day][i],-1);
+                            }else {
+                                builder.addTerm(lessonPoints[stu][sub][day][i],1);
+                            }
+                        }
+                    }
+                    //model.addEquality(builder,frequency.get(sub));
+                    //model.maximize(builder);
+                    maximize(model,builder);
+                }
+            }
+        }
+
+
 
         // 求解
         CpSolver solver = new CpSolver();
@@ -218,6 +222,16 @@ public class Cp学生大班排课v2 {
         System.out.printf("  conflicts: %d%n", solver.numConflicts());
         System.out.printf("  branches : %d%n", solver.numBranches());
         System.out.printf("  wall time: %f s%n", solver.wallTime());
+    }
+
+    private static void maximize(CpModel model, LinearExprBuilder builder) {
+        CpObjectiveProto.Builder obj = model.getBuilder().getObjectiveBuilder();
+        LinearExpr e = builder.build();
+        for(int i = 0; i < e.numElements(); ++i) {
+            obj.addVars(e.getVariableIndex(i)).addCoeffs(-e.getCoefficient(i));
+        }
+        obj.setOffset((double)(-e.getOffset()));
+        obj.setScalingFactor(-1.0D);
     }
 
 }
