@@ -1,9 +1,11 @@
 package com.example.ortools.start.mp;
 import com.google.ortools.Loader;
+import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import com.google.ortools.sat.CpSolver;
 
 public class MpDemo {
 
@@ -23,7 +25,8 @@ public class MpDemo {
 
         // 创建一个线性规划求解器
         MPSolver solver = MPSolver.createSolver("GLOP");
-
+        Solver solver1 = new Solver("CpSimple");
+        CpSolver cpSolver = new CpSolver();
         // 创建变量
         MPVariable x = solver.makeNumVar(0, 1, "x");
         MPVariable y = solver.makeNumVar(0, 2, "y");
