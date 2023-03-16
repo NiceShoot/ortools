@@ -126,6 +126,9 @@ public class Cp学生大班排课v3 {
 
         // 求解
         CpSolver solver = new CpSolver();
+        SatParameters.Builder parameters = solver.getParameters();
+        parameters.setLogSubsolverStatistics(true);
+        parameters.setLogFrequencyInSeconds(0.001);
         CpSolverStatus status = solver.solve(model);
         if (status == CpSolverStatus.OPTIMAL || status == CpSolverStatus.FEASIBLE) {
             System.out.printf("Solution:%n");
